@@ -25,10 +25,11 @@ function queryDatabase(token) {
     })
 }
 
-
+var onceBool;
 
 
 jQuery(document).ready(function() {
+    onceBool = true;
     $('.login-form .new-animake').off('click').on('click', function() {
         $('.login-form').hide();
         $('.reg-form').show();
@@ -57,9 +58,14 @@ jQuery(document).ready(function() {
             // User is signed in.
             var token = firebase.auth().currentUser.uid;
             queryDatabase(token);
-            //closeLoginModal();
+
+            // closeLoginModal();
+            $('#myModal').hide();
+            $('.reg').hide();
+            $('#js-modal').hide();
             $('.login-form').hide();
             $('.reg-form').hide();
+
         }
     });
 
