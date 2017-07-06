@@ -1,30 +1,46 @@
 var resultsPerPage = 12;
 var pages = 0;
 
+var animationsArray = []
+$.blockUI();
+firebase.database().ref("animations").orderByChild("name").once("value", function(ss) {
+    var allAnimations = ss.val();
+    Object.keys(allAnimations).forEach(function(animKey) {
+        animationsArray.push(allAnimations[animKey]);
+    });
+
+    getVideos(1);
+});
+
 function getVideos(page, th) {
     $.blockUI();
     if (th != undefined) {
         $(th).parent().parent().find(".active").toggleClass("active");
         $(th).parent().toggleClass("active");
     }
-    var startAt = ((page - 1) * resultsPerPage) + 1;
+    var offset = (page - 1) * resultsPerPage;
     var blocks = '';
     var k = 1;
     var completed = 1;
-    firebase.database().ref("animations").orderByChild("name").startAt(startAt).limitToFirst(resultsPerPage).once("value", function(ss) {
-        var animations = ss.val();
-        animations && Object.keys(animations).forEach(function(animKey) {
-            firebase.storage().ref("animFiles").child(animations[animKey].name + ".anim").getDownloadURL().then(function(animDownloadUrl) {
-                firebase.storage().ref("mp4Files").child(animations[animKey].name + ".mp4").getDownloadURL().then(function(downloadUrl) {
+    var data = animationsArray.slice(offset, (page * resultsPerPage));
+    if (!data.length) {
+        $.unblockUI();
+    } else {
+        data.forEach(function(anim) {
+
+            firebase.storage().ref("animFiles").child(anim.name + ".anim").getDownloadURL().then(function(animDownloadUrl) {
+                firebase.storage().ref("mp4Files").child(anim.name + ".mp4").getDownloadURL().then(function(downloadUrl) {
                     blocks += '<div class="box box' + k + ' fadeInUp clust">';
                     blocks += '<div style="z-index: 111;">';
-                    blocks += '<a class="newwwww" href="javascript:;" data-name="' + animations[animKey].name + '"><i class="fa fa-plus-circle fa-2x" aria-hidden="true" ></i></a>';
-                    blocks += '<a href="' + animDownloadUrl + '" download="' + animations[animKey].name + '.anim"><i class="fa fa-download fa-2x" aria-hidden="true"></i></a>';
+                    blocks += '<a class="newwwww" href="javascript:;" data-name="' + anim.name + '"><i class="fa fa-plus-circle fa-2x" aria-hidden="true" ></i></a>';
+                    blocks += '<a data-url="' + animDownloadUrl + '" data-name="' + anim.name + '.anim" onclick="downloadFile(this)"><i class="fa fa-download fa-2x" aria-hidden="true"></i></a>';
+                    blocks += '<div class="animation-name">' + anim.name + '</div>';
                     blocks += '</div>';
-                    blocks += '<video autoplay loop muted>';
+                    blocks += '<video autoplay loop  muted>';
                     blocks += '<source src="' + downloadUrl + '" type="video/mp4" />';
                     blocks += '</video>';
                     blocks += '</div>';
+
                     k++;
                     if (k === completed) {
                         $('.zodiacCont').html(blocks);
@@ -59,7 +75,7 @@ function getVideos(page, th) {
             })
             completed++;
         });
-    });
+    }
 }
 
 firebase.database().ref("animations").orderByChild("name").once("value", function(ss) {
@@ -74,11 +90,8 @@ firebase.database().ref("animations").orderByChild("name").once("value", functio
 
 jQuery(document).ready(function() {
 
-    /*---------firebase storage zodiacCont--------------*/
-    getVideos(1);
-
-    /*--------------------Side Bar------------------------------------*/
     firebase.database().ref("/tags/").once('value').then(function(snapshot) {
+
         var fireObject = snapshot.val();
         var t = 0;
 
@@ -92,26 +105,26 @@ jQuery(document).ready(function() {
             $(".menuS").append('<li role="presentation"' + active + '><a href="javascript:;">' + key + '</a>' + sabUl + '</li>');
             ++t;
         }
-        
+
         $(".subManuLi").off('click').on('click', function() {
-        var subLi = '';
-            if (!$(this).hasClass("activeTag")){
-                    $(this).addClass("active activeTag");
+            var subLi = '';
+            if (!$(this).hasClass("activeTag")) {
+                $(this).addClass("active activeTag");
                 var name = $(this).attr('data-name');
-                    subLi += '<div class="pull-left closeDiv">';
-                    subLi += '<p class="pull-left filterP">' + $(this).html() + '</p>';
-                    subLi += '<button class="pull-right closeBtn" data-name="' + name + '">X</button>';
-                    subLi += '</div>';
-                    $(".tagName").append(subLi);
-                    selected = true;
-                   
+                subLi += '<div class="pull-left closeDiv">';
+                subLi += '<p class="pull-left filterP">' + $(this).html();
+                subLi += '<button class="pull-right closeBtn" data-name="' + name + '">X</button>' + '</p>';
+                subLi += '</div>';
+                $(".tagName").append(subLi);
+                selected = true;
+
             }
             $(".closeBtn").off('click').on('click', function() {
                 var name = $(this).attr('data-name');
                 $(this).parent().remove();
-                $('.subMenuS li[data-name="'+name+'"]').removeClass('active activeTag');
+                $('.subMenuS li[data-name="' + name + '"]').removeClass('active activeTag');
             });
-        
+
         });
     });
     /*----------------------CloseButton---------------------*/
